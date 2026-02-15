@@ -7,6 +7,7 @@
 </head>
 <body>
 
+
   <h2>Employee Management</h2>
   <button onclick="logout()">Logout</button>
 
@@ -19,7 +20,21 @@
   <button onclick="addEmployee()">Add</button>
 
   <h3>Employees</h3>
-  <ul id="employeeList"></ul>
+
+<table border="1" cellpadding="8">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Department</th>
+      <th>Salary</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="employeeTable"></tbody>
+</table>
+
 
   <script src="app.js"></script>
 </body>

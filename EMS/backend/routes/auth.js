@@ -41,3 +41,4 @@ router.post("/login", async (req, res) => {
 });
 
 module.exports = router;
+console.log("JWT_SECRET during login:", process.env.JWT_SECRET);

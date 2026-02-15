@@ -1,36 +1,56 @@
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://127.0.0.1:5000/api";
+
+document.addEventListener("DOMContentLoaded", () => {
+  const token = localStorage.getItem("token");
+
+  // If on dashboard page
+  if (window.location.pathname.includes("dashboard")) {
+    if (!token) {
+      window.location.href = "login.html";
+    } else {
+      loadEmployees();
+    }
+  }
+
+  // If on login page
+  if (window.location.pathname.includes("login")) {
+    if (token) {
+      window.location.href = "dashboard.html";
+    }
+  }
+});
+
 
 // LOGIN
-async function login() 
-{
+async function login() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
-  const error = document.getElementById("error");
 
-  try 
-  {
-    const res = await fetch(`${API_URL}/auth/login`, 
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username, password }),
+  });
 
-    const data = await res.json();
+  const data = await res.json();
+  console.log("Login response:", data);
 
-    if (!res.ok) 
-    {
-      error.innerText = data.message || "Login failed";
-      return;
-    }
-
-    localStorage.setItem("token", data.token);
-    window.location.href = "dashboard.html";
-  } catch 
-  {
-    error.innerText = "Server error";
+  if (!res.ok) {
+    alert("Login failed");
+    return;
   }
+
+  // STORE TOKEN
+  localStorage.setItem("token", data.token);
+  console.log("Stored token:", data.token);
+
+  window.location.href = "dashboard.html";
 }
+
+
+
 
 // LOGOUT
 function logout() 
@@ -40,61 +60,75 @@ function logout()
 }
 
 // LOAD EMPLOYEES
-async function loadEmployees() 
-{
+async function loadEmployees() {
   const token = localStorage.getItem("token");
-  if (!token) 
-  {
-    window.location.href = "login.html";
-    return;
-  }
+  console.log("Token:", token);
 
-  const res = await fetch(`${API_URL}/employees`, 
-  {
+  const res = await fetch(`${API_URL}/employees`, {
     headers: { Authorization: token },
   });
 
-  const employees = await res.json();
-  const list = document.getElementById("employeeList");
+  console.log("Response status:", res.status);
 
-  list.innerHTML = "";
-  employees.forEach(emp => 
-  {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      ${emp.name} - ${emp.department}
-      <button onclick="deleteEmployee('${emp._id}')">Delete</button>
+  const employees = await res.json();
+  console.log("Employees:", employees);
+
+  const table = document.getElementById("employeeTable");
+  table.innerHTML = "";
+
+  employees.forEach(emp => {
+    table.innerHTML += `
+      <tr>
+        <td>${emp.name}</td>
+        <td>${emp.email}</td>
+        <td>${emp.role}</td>
+        <td>${emp.department}</td>
+        <td>${emp.salary}</td>
+      </tr>
     `;
-    list.appendChild(li);
   });
 }
 
+
+
 // ADD EMPLOYEE
-async function addEmployee() 
-{
+async function addEmployee() {
   const token = localStorage.getItem("token");
+  console.log("Token being sent:", token);
 
-  const employee = {
-    name: name.value,
-    email: email.value,
-    role: role.value,
-    department: department.value,
-    salary: salary.value,
-  };
+  const name = document.querySelector('input[placeholder="Name"]').value;
+  const email = document.querySelector('input[placeholder="Email"]').value;
+  const role = document.querySelector('input[placeholder="Role"]').value;
+  const department = document.querySelector('input[placeholder="Department"]').value;
+  const salary = document.querySelector('input[placeholder="Salary"]').value;
 
-  await fetch(`${API_URL}/employees`, 
-  {
+  if (!name || !email || !role || !department || !salary) {
+    alert("Fill all fields");
+    return;
+  }
+
+  const res = await fetch(`${API_URL}/employees`, {
     method: "POST",
-    headers: 
-    {
+    headers: {
       "Content-Type": "application/json",
-      Authorization: token,
+      "Authorization": `Bearer ${token}`
     },
-    body: JSON.stringify(employee),
+    body: JSON.stringify({ name, email, role, department, salary })
   });
+
+  const data = await res.json();
+  console.log("Response:", data);
+
+  if (!res.ok) {
+    alert(data.message);
+    return;
+  }
 
   loadEmployees();
 }
+
+
+
 
 // DELETE EMPLOYEE
 async function deleteEmployee(id) 
@@ -110,8 +144,37 @@ async function deleteEmployee(id)
   loadEmployees();
 }
 
+let editingId = null;
+
+function editEmployee(id) {
+  editingId = id;
+
+  fetch(`${API_URL}/employees`, {
+    headers: { Authorization: localStorage.getItem("token") }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const emp = data.find(e => e._id === id);
+
+    name.value = emp.name;
+    email.value = emp.email;
+    role.value = emp.role;
+    department.value = emp.department;
+    salary.value = emp.salary;
+  });
+}
+
+
 // Auto-load employees on dashboard
 if (window.location.pathname.includes("dashboard")) 
 {
   loadEmployees();
+}
+
+function clearForm() {
+  name.value = "";
+  email.value = "";
+  role.value = "";
+  department.value = "";
+  salary.value = "";
 }
